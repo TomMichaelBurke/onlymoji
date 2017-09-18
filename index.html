@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+        <link rel="icon" href="./favicon.png">
+        <link rel="apple-touch-icon" sizes="57x57" href="./icon-57x57.png" />
+        <link rel="apple-touch-icon" sizes="72x72" href="./icon-72x72.png" />
+        <link rel="apple-touch-icon" sizes="114x114" href="./icon-114x114.png" />       
+        <link rel="apple-touch-icon" sizes="144x144" href="./icon-144x144.png" />         
+        <link rel="apple-touch-icon" sizes="144x144" href="./icon-144x144.png" />
+    <head>
+       
+        <meta name="viewport" content="width=375, user-scalable=no" />
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/axios/dist/axios.standalone.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/rollups/hmac-sha256.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/components/enc-base64.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/url-template/url-template.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/sigV4Client.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/utils.js"></script>
+        <script type="text/javascript" src="apiGateway-js-sdk/apigClient.js"></script>
+        <script type="text/javascript" src="moment.min.js"></script>
+        <script src="bundle.js"></script>
+        <title>OnlyMoji</title>
+
+        <style>
+
+            textarea { font-size: 24px; width: 95% }
+            button { font-size: 18px; }
+            div { width: 100%; }
+            button {background-color: #A9F5E1; border-radius: 8px;}
+            body {
+                overflow: hidden;
+                max-width:375px;
+                max-height:650px;
+            }
+            .screen { 
+                    position: absolute;
+                    left: 0px;
+                    top: 0px; 
+                    width:375px; min-height:550px;  max-height:550px; background-image: url("./bg5-4.jpg");border-color: black; border-width: 1px; }
+            .title { 
+                font-size: 30px; font-weight: bold; text-align:-webkit-center;
+            }
+            .loginscreen { 
+                    position: absolute;
+                    left: 0px;
+                    top: 0px; 
+                    z-index: 1;
+                    width: 355px; padding: 10px; background-color: #A9F5E1; }
+           .onlymojiscreen { 
+                    position: absolute;
+                    left: 0px;
+                    top: 0px; 
+                    z-index: 1;
+            }
+            .messagearea { overflow-y: auto; max-height:425px; padding: 5px;
+                            -webkit-overflow-scrolling: touch; 
+            }
+            .message {
+                max-width: 355px; 
+                padding: 4px; 
+                background-color: #A9F5E1; 
+                border-color: black; 
+                border-width: 2px;
+                border-radius: 15px;
+                border-style: solid;
+                word-break: break-all; word-wrap: break-word;
+            }
+            .selectedMessage {
+                max-width: 355px; 
+                padding: 4px; 
+                background-color: MediumOrchid; 
+                border-color: darkred; 
+                border-width: 2px;
+                border-radius: 15px;
+                border-style: solid;
+                word-break: break-all; word-wrap: break-word;
+            }
+            .msgDeleteButton {
+               position: relative;
+               left: 10px;
+               top: -3px; 
+               padding: 4px; 
+               border: none;  
+               font-size: 10px;
+            }            
+            .reactDeleteButton { 
+               padding: 4px; 
+               border: none;  
+               font-size: 10px;
+            }
+
+            .msgUsernameSpan {font-size: 16px; font-weight: bold; float:left;}
+            .msgHashtagSpan {font-size: 18px;font-weight: bold;}
+            .msgMessageSpan {font-size: 36px;font-weight: bold;}
+            .msgAndHashtagDiv {text-align:-webkit-center;float: center; }
+            .msgReactDiv {font-size: 14px;}
+            .msgPosttimeSpan {font-size: 14px; float:right;}            
+            .reactBtn {background-color: MediumOrchid;}
+            .wait {
+               position: absolute;
+               left: 50px;
+               top: 175px; 
+               z-index: 10;
+            }
+        </style>
+    </head> 
+ <body>
+ 	<div id='screen' class='screen'>
+        <img id='wait_image' hidden src='loading.gif' class='wait'>
+        <div id='loginscreen' class='loginscreen'>
+            <p class='title'> OnlyMoji - Private Beta </p>
+            Username:
+            <textarea id="username" rows=1></textarea><br><br>
+            Password:
+            <textarea id="password" rows=1></textarea><br><br>
+            <button onclick='onLogin()'>Login</button>
+        </div>
+          
+        <div hidden id='onlymojiscreen' class='onlymojiscreen'>
+            <div id='message_area' class='messagearea'> </div>	
+            <div id='input_area' > 
+                <br>
+                <textarea id='ta' rows=1></textarea>
+                <button onclick="onUpdate()"> <img src="./refresh.png" height=35 width=35/></button>
+                <button id='sendbutton' onclick="onEnter()">  <img src="./send.png" height=35 width=35/></button>
+                <button id='reactbutton' class='reactBtn' hidden onclick="onReact()">  <img src="./reply.png" height=35 width=35/></button>
+            </div>
+        </div>	
+    </div>
+
+	<script>
+        function isPrivateBrowsingSupportedEvenIfThisIsSafari() {
+            if (window.localStorage) {
+                var test = "__localstoragetest__";
+
+                try {
+                    window.localStorage.setItem(test, test);
+                    window.localStorage.removeItem(test);
+                } catch(ex) {
+                    console.log("No storage for you!");
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        window.onerror = function(error) {
+            alert(error);
+        };
+
+        if (isPrivateBrowsingSupportedEvenIfThisIsSafari()) {
+            // Retrieve
+            if ( localStorage.getItem("username") ) {
+                document.getElementById("username").value = localStorage.getItem("username");
+            }           
+         if ( localStorage.getItem("password") ) {
+                document.getElementById("password").value = localStorage.getItem("password");           
+            }           
+         } else {
+            // Sorry! No Web Storage support..
+        }
+        var authParams;
+        var apigClient = apigClientFactory.newClient();
+
+        var pendingUserName;        
+        var authorizedUserName;
+        var idToken;
+
+        var selectedMessage; // { div: xxx, username: xxx, posttime: xxx }
+
+        var timeSpansToTimeMap = []; //{ timeSpan: xxx, time: xxx }
+        var timeUpdateIntervalHandle;
+
+        function showWait(show) {
+            var waitImage = document.getElementById("wait_image"); 
+            waitImage.hidden = !show;   
+        }
+
+		var messageStore = [
+			{username:'TomB', message: '🍕🙌😋#homemadepizza'},
+			{username:'Other', message: '🔒🔒🔒🔒 #lockstruck'}
+		];
+
+		function addReaction( reaction ) {
+            showWait(true);
+            refreshToken( (err) => {
+                if ( err ) {
+                    alert("Auth error, restart");
+                    return;
+                }
+                else {
+                    apigClient.reactionPost( {}, reaction, authParams)
+                        .then(function(result){
+                                var reactionResult = result.data;
+                                refreshMessages();
+                        }).catch( function(result){
+                            alert(result);
+                            showWait(false);
+                        });
+                }
+            });
+		}
+
+
+		function deleteReaction( reaction ) {  // { username: xxx, posttime: xxx, time: xxx } // BUG ALERT: two reactions could come in simultaneously (rare)
+            showWait(true);
+            refreshToken( (err) => {
+                if ( err ) {
+                    alert("Auth error, restart");
+                    return;
+                }
+                else {
+                    apigClient.reactionDelete( {}, reaction, authParams)
+                        .then(function(result){
+                                var reactionResult = result.data;
+                                refreshMessages();
+                        }).catch( function(result){
+                            alert(result);
+                            showWait(false);
+                        });
+                }
+            });
+		}
+
+		function deleteMessage( msg ) {
+            showWait(true);
+            refreshToken( (err) => {
+                if ( err ) {
+                    alert("Auth error, restart");
+                    return;
+                }
+                else {
+                    apigClient.setMessageDelete( {}, msg, authParams)
+                        .then(function(result){
+                                var messages = result.data;
+                                refreshMessages();
+                        }).catch( function(result){
+                            alert(result);
+                            showWait(false);
+                        });
+                }
+            });
+		}
+
+		function sendMessage( msg ) {
+            showWait(true);
+            refreshToken( (err) => {
+                if ( err ) {
+                    alert("Auth error, restart");
+                    return;
+                }
+                else {
+                    params = {username:authorizedUserName, content: msg};
+                    apigClient.setMessagePost( {}, params, authParams)
+                        .then(function(result){
+                                var messages = result.data;
+                                refreshMessages();
+                        }).catch( function(result){
+                            alert(result);
+                            showWait(false);
+                        });
+                }
+            });
+		}
+
+		function getMessages() {
+			return messageStore;
+		}
+
+        function splitMessage( msg ) {
+            var msgParts = msg.split("#"); // single hashtag at the end
+                                
+            var msgText = " ";
+            var msgHashtag = " ";
+            if ( msgParts.length >= 1 ) {
+                msgText = msgParts[0];
+            }
+            if ( msgParts.length >= 2 ) {
+                msgHashtag = '#' + msgParts[1];
+            }
+   
+            return { message: msgText,
+                     hashtag: msgHashtag};
+        }
+
+		function createMessageUI(message) {
+            msgDiv = document.createElement("div");
+            msgDiv.className = 'message';
+            var thatMsgDiv = msgDiv; 
+            var thatMsgUsername = message.username; 
+            var thatMsgPosttime = message.posttime; 
+            msgDiv.onclick = function() {
+                if (selectedMessage) { // make sure something is selected
+                    selectedMessage.div.className = 'message';
+                    if (selectedMessage.div == thatMsgDiv) {
+                        selectedMessage = undefined;
+                        document.getElementById("sendbutton").hidden = false;
+                        document.getElementById("reactbutton").hidden = true;
+                        return; // don;t re-select this message
+                    }
+                }
+
+                selectedMessage = { div:  thatMsgDiv, username: thatMsgUsername, posttime: thatMsgPosttime };
+                thatMsgDiv.className = 'selectedMessage';
+                document.getElementById("sendbutton").hidden = true;
+                document.getElementById("reactbutton").hidden = false;            };
+
+            // delete button
+            if (  message.username == authorizedUserName) {
+                var deleteBtn = document.createElement("button");
+                deleteBtn.className = "msgDeleteButton";
+                deleteBtn.innerHTML = '<img src="./trash.png" height=20 width=20/>';
+                deleteBtn.onclick = function(){
+                    deleteMessage({ username: message.username, posttime: message.posttime });
+                };
+                msgDiv.appendChild(deleteBtn);
+            }
+
+            // username
+            var usernameSpan = document.createElement("span");
+            usernameSpan.className = 'msgUsernameSpan';
+            usernameSpan.textContent = message.username + " ";
+            msgDiv.appendChild(usernameSpan);
+
+            // post time
+            var posttimeSpan = document.createElement("span");
+            posttimeSpan.className = 'msgPosttimeSpan';
+            var date = moment(message.posttime);
+            posttimeSpan.textContent = date.fromNow();
+            msgDiv.appendChild(posttimeSpan);
+            timeSpansToTimeMap.push( { timeSpan: posttimeSpan, time: message.posttime } );
+
+            // message and hashtag
+            var hashtagSpan = document.createElement("span");
+            hashtagSpan.className = 'msgHashtagSpan';
+
+            var messageSpan = document.createElement("div");
+            messageSpan.className = 'msgMessageSpan';
+            if (window.chrome) {
+                messageSpan.style.fontSize = "160%";
+            }
+
+            if ( message.message !== undefined) { // guard against empty messages
+                var msgParts = splitMessage( message.message );               
+                messageSpan.innerHTML = msgParts.message;
+                hashtagSpan.textContent = msgParts.hashtag;
+
+                var brElem = document.createElement("br");
+                msgDiv.appendChild(brElem);
+
+                // div containing msg + hashtag
+                msgHashDiv = document.createElement("div");
+                msgHashDiv.className = 'msgAndHashtagDiv';
+                            
+                msgHashDiv.appendChild(messageSpan);
+                msgHashDiv.appendChild(hashtagSpan);
+                msgDiv.appendChild(msgHashDiv);
+            }
+            // reactions
+            //
+            if ( message.reactions ) {
+                message.reactions.forEach( (react) => {
+                    var msgParts = splitMessage( react.message );
+
+                    var reactDiv = document.createElement("div");
+                    reactDiv.className = 'msgReactDiv';
+                    var reactMessageDiv = document.createElement("span");
+                    if ( react.username == authorizedUserName ) { // let them delete
+                        var deleteBtn = document.createElement("button");
+                        deleteBtn.className = "reactDeleteButton";
+                        deleteBtn.innerHTML = '<img src="./trash.png" height=15 width=15/>';
+                        deleteBtn.onclick = function(){
+                            deleteReaction({ username: message.username, 
+                                             posttime: message.posttime,
+                                             time: react.time });
+                        };
+                        reactDiv.appendChild(deleteBtn);
+                    }               
+                    reactMessageDiv.innerHTML = react.username + ": " + msgParts.message + " " + msgParts.hashtag;
+                    reactDiv.appendChild(reactMessageDiv);
+                    msgDiv.appendChild(reactDiv);
+                });
+            }
+
+            return msgDiv;
+		}
+
+        function refreshToken(cb)
+        {
+              LibEntryPoint.signin.refresh( (err, data) => {
+                if ( err ) {
+                    cb(err);
+                }
+                else {
+                    idToken = data;
+                    authParams = {
+                        headers: {
+                            Authorization: idToken
+                        }
+                    };
+                    cb(null);
+                }
+              });
+        }
+
+		function refreshMessages() {
+            selectedMessage = undefined; // TODO: use selectMessage() and unselectMessage() methods
+            document.getElementById("sendbutton").hidden = false;
+            document.getElementById("reactbutton").hidden = true;
+            showWait(true);
+            if ( timeUpdateIntervalHandle ) 
+                window.clearInterval(timeUpdateIntervalHandle);
+
+            refreshToken( (err) => {
+                if ( err ) {
+                    alert("Auth error, restart");
+                    return;
+                }
+                else {
+                    // clear message area
+                    var msgArea = document.getElementById("message_area");
+                    while (msgArea.firstChild) {
+                        msgArea.firstChild.remove();
+                    }
+                    
+
+                    apigClient.getMessagesGet({},{},authParams)
+                            .then(function(result){
+                                timeSpansToTimeMap = [];
+                                var messages = result.data;
+                                // populate message area style
+                                for (var i = 0; i < messages.length; ++i) {
+        
+                                    msgArea.appendChild(createMessageUI(messages[i]));
+                                    var brElem2 = document.createElement("BR");
+                                    msgArea.appendChild(brElem2);
+                                    
+                                    showWait(false);
+                                    timeUpdateIntervalHandle = window.setInterval(function () {
+                                        timeSpansToTimeMap.forEach( function(mapEntry) {
+                                            var date = moment(mapEntry.time);
+                                            mapEntry.timeSpan.textContent = date.fromNow();
+                                        });
+
+                                    }, 1000*60 /* one minute interval */);
+                                }
+                            }).catch( function(result){
+                                 alert( "Refresh failed, try again.");
+                                showWait(false);
+                            });
+                    }
+            });
+		};
+
+		function onReact() {
+			var post = document.getElementById("ta");
+			var text = ta.value;
+            if (text == "")
+                return;
+
+			ta.value = "";
+
+            var msg = "";
+
+            text = text.toLowerCase();
+            var msgParts = text.split("#"); // single hashtag at the end
+            if ( msgParts.length < 1 ) {
+                return;
+            }            
+            if ( msgParts.length >= 1 ) {
+                msg = msgParts[0].replace(/[a-z]/gi, ''); // remove chars from emoji message
+                msg = msg.replace(/\n/gi, '<br>');
+                msg = msg.replace(/ /gi, '&nbsp;');
+            }
+            if ( msgParts.length >= 2 ) {
+                var htParts = msgParts[1].split(" "); // remove spaces from hashtag
+                msg = msg + "#" + htParts[0].replace(/[^0-9a-z]/gi, ''); // add back hashtag and remove non-alpha chars
+            }
+            var reaction = { username: selectedMessage.username, posttime: selectedMessage.posttime, message: msg };
+			addReaction( reaction );
+		};
+
+
+		function onEnter() {
+			var post = document.getElementById("ta");
+			var text = ta.value;
+            if (text == "")
+                return;
+
+			ta.value = "";
+
+            var msg = "";
+
+            text = text.toLowerCase();
+            var msgParts = text.split("#"); // single hashtag at the end
+            if ( msgParts.length < 1 ) {
+                return;
+            }            
+            if ( msgParts.length >= 1 ) {
+                msg = msgParts[0].replace(/[a-z]/gi, ''); // remove chars from emoji message
+                msg = msg.replace(/\n/gi, '<br>');
+                msg = msg.replace(/ /gi, '&nbsp;');
+            }
+            if ( msgParts.length >= 2 ) {
+                var htParts = msgParts[1].split(" "); // remove spaces from hashtag
+                msg = msg + "#" + htParts[0].replace(/[^0-9a-z]/gi, ''); // add back hashtag and remove non-alpha chars
+            }
+			sendMessage( msg );
+		};
+
+		function onLogin() {
+
+            var pendingUserName = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+
+            if (isPrivateBrowsingSupportedEvenIfThisIsSafari()) {
+                localStorage.setItem("username", pendingUserName);
+                localStorage.setItem("password", password);
+            } else {
+                // Sorry! No Web Storage support..
+            }
+            
+            //LibEntryPoint.signin(, "tbtbtbtb", function(err, data) {
+            that = this;
+            showWait(true);
+            LibEntryPoint.signin.signin(pendingUserName, password, function(err, data) {
+                //document.write(data);
+                if (err) {
+                    alert( "Login Failed, try again.");
+                    showWait(false);
+                } 
+                else {
+                    idToken = data;
+                    authorizedUserName = pendingUserName;
+                    if ( idToken ) {
+                        // alert( "Login Success: " + data );
+
+                        authParams = {
+                            headers: {
+                                Authorization: idToken
+                            }
+                        };
+
+  			            var loginScreen = document.getElementById("loginscreen");			
+			            var onlymojiScreen = document.getElementById("onlymojiscreen");
+                        loginScreen.hidden = true;
+                        onlymojiScreen.hidden = false;
+
+                        var textarea = document.getElementById('ta');
+                        //textarea.onkeydown = onKeyDown;
+
+                        refreshMessages();
+                    }
+                }
+            });
+		};
+
+		function onUpdate() {
+			refreshMessages();
+		};
+
+
+
+		function onKeyDown(e) {
+			if(e.keyCode == 13){
+   				onEnter();
+  			} 
+		};
+
+	</script>
+</body>
+</html>

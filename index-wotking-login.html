@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="apiGateway-js-sdk/lib/axios/dist/axios.standalone.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/rollups/hmac-sha256.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/components/enc-base64.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/url-template/url-template.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/sigV4Client.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/utils.js"></script>
+<script type="text/javascript" src="apiGateway-js-sdk/apigClient.js"></script>
+<script src="bundle.js"></script>
+        <title>AWS SDK with webpack</title>
+    </head> 
+    <body>
+        <div id="list"></div>
+
+        <script>
+            LibEntryPoint.signin("TomB", "tbtbtbtb", function(err, data) {
+                document.write(data);
+                var idToken = data;
+
+                var apigClient = apigClientFactory.newClient();
+                var additionalParams = {
+                    headers: {
+                        Authorization: idToken
+                    }
+                };
+                apigClient.getMessagesGet({},{},additionalParams)
+                    .then(function(result){
+                        for (var i = 0; i < result.data.length; ++i) {
+                            document.write( "<BR>");
+                            document.write("user: " + result.data[i].username + "  message: " +  result.data[i].message);
+                        }  
+                    }).catch( function(result){
+                    // Add error callback code here.
+                    });
+            });
+
+        </script>
+
+    </body>
+</html>
